@@ -1,0 +1,21 @@
+{
+    "name": "fut/connectors",
+    "description": "Connectors for Fifa Ultimate Team 15.",
+    "authors": [
+        {
+            "name": "Eduard Bess",
+            "email": "eduard.bess@gmail.com"
+        }
+    ],
+    "license": "MIT",
+    "autoload": {
+        "psr-0" : {
+            "Fut" : "src"
+        }
+    },
+    "require": {
+        "guzzlehttp/guzzle": "4.1.*",
+	    "fut/eahashor": "1.0.0",
+	    "fut/request-forge": "2.0.*"
+    }
+}
