@@ -19,14 +19,13 @@ $client->getEmitter()->attach($cookieSubscriber);
 try {
 
     /**
-     * there are two endpoints at the the moment
+     * there are two platforms at the the moment
      *
      * playstation: Forge::PLATFORM_PLAYSTATION
      * xbox: Forge::PLATFORM_XBOX
      *
-     * also you can set two different endpoints
+     * also you can set different endpoints
      *
-     * mobile: Forge::ENDPOINT_MOBILE
      * webapp: Forge::ENDPOINT_WEBAPP
      *
      */
