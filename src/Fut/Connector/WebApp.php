@@ -2,12 +2,15 @@
 
 namespace Fut\Connector;
 
+use Fut\Connector\EndpointInterface;
+use Fut\Connector\Generic;
+
 /**
  * connector used to connect as a browser web app
  *
  * Class Connector_WebApp
  */
-class WebApp extends Generic
+class WebApp extends Generic implements EndpointInterface
 {
     /**
      * @var array

@@ -5,6 +5,8 @@ namespace Fut;
 use Fut\Request\Forge;
 use Fut\Connector\WebApp;
 use Fut\Connector\Mobile;
+use Fut\ConnectorInterface;
+use Fut\Connector\EndpointInterface;
 use GuzzleHttp\Client;
 
 /**
@@ -13,7 +15,7 @@ use GuzzleHttp\Client;
  * Class Connector
  * @package Fut
  */
-class Connector
+class Connector implements ConnectorInterface
 {
     /**
      * @var string
@@ -59,7 +61,7 @@ class Connector
     );
 
     /**
-     * @var null|\Fut\Connector\Generic
+     * @var null|EndpointInterface
      */
     protected $connector = null;
 
