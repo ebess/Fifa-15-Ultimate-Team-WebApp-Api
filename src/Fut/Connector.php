@@ -56,9 +56,13 @@ class Connector implements ConnectorInterface
      * @var string[]
      */
     protected $endpoints = array(
-        Forge::ENDPOINT_WEBAPP,
-        Forge::ENDPOINT_MOBILE
+        Forge::ENDPOINT_WEBAPP
     );
+
+    /**
+     * @var mixed
+     */
+    protected $payload = null;
 
     /**
      * @var null|EndpointInterface
@@ -75,7 +79,7 @@ class Connector implements ConnectorInterface
      * @param string $platform
      * @param string $endpoint
      */
-    public function __construct($client, $email, $password, $answer, $platform, $endpoint)
+    public function __construct($client, $email, $password, $answer, $platform, $endpoint, $payload = null)
     {
         $this->client = $client;
         $this->email = $email;
@@ -83,7 +87,8 @@ class Connector implements ConnectorInterface
         $this->answer = $answer;
         $this->platform = $platform;
         $this->endpoint = $endpoint;
-        
+        $this->payload = $payload;
+
         Forge::setPlatform($this->platform);
         Forge::setEndpoint($this->endpoint);
     }
@@ -103,9 +108,13 @@ class Connector implements ConnectorInterface
             switch($this->endpoint) {
                 case Forge::ENDPOINT_WEBAPP:
                     $this->connector = new WebApp($this->email, $this->password, $this->answer, $this->platform);
-                    break;
-                case Forge::ENDPOINT_MOBILE:
-                    $this->connector = new Mobile($this->email, $this->password, $this->answer, $this->platform);
+
+                    // set the captcha handler if needed
+                    if ($this->payload !== null && isset($this->payload['captcha_handler'])) {
+                        $captchaHandler = $this->payload['captcha_handler'];
+                        $this->connector->setCaptchaHandler($captchaHandler);
+                    }
+
                     break;
             }
 

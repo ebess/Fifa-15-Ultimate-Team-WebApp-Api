@@ -2,6 +2,7 @@
 
 namespace Fut\Connector;
 
+use Fut\Connector\CaptchaHandlerInterface;
 use Fut\EAHashor;
 use Fut\Request\Forge;
 use GuzzleHttp\Client;
@@ -57,6 +58,11 @@ abstract class Generic
     protected $phishingToken;
 
     /**
+     * @var CaptchaHandlerInterface
+     */
+    protected $captchaHandler = null;
+
+    /**
      * creates a connector with given credentials
      *
      * @param string $email
@@ -86,6 +92,20 @@ abstract class Generic
      * @return array
      */
     abstract public function exportLoginData();
+
+
+    /**
+     * handler for process the captcha request
+     *
+     * @param CaptchaHandler $handler
+     * @return $this
+     */
+    public function setCaptchaHandler(CaptchaHandlerInterface $handler)
+    {
+        $this->captchaHandler = $handler;
+        
+        return $this;
+    }
 
     /**
      * @param Client $client

@@ -200,7 +200,7 @@ class WebApp extends Generic implements EndpointInterface
         );
 
         $forge = $this->getForge($this->urls['sid'], 'post');
-		$json = $forge
+        $json = $forge
             ->setNucId($this->nucId)
             ->setRoute()
             ->setBody($data, true)
@@ -228,8 +228,20 @@ class WebApp extends Generic implements EndpointInterface
 
         $this->questionStatus = $json;
 
-        return $this;
+        // if captcha triggered call the captcha handler
+        if (isset($json['code']) && $json['code'] == 459 && $json['string'] == 'Captcha Triggered') {
 
+            // if proper handler
+            if ($this->captchaHandler !== null) {
+                $this->captchaHandler->run([
+                    'sid' => $this->sid,
+                    'nucleusId' => $this->nucId
+                ]);
+            }
+
+        }
+
+        return $this;
     }
 
     /**
