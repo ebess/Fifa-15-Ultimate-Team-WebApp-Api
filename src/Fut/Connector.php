@@ -56,7 +56,8 @@ class Connector implements ConnectorInterface
      * @var string[]
      */
     protected $endpoints = array(
-        Forge::ENDPOINT_WEBAPP
+        Forge::ENDPOINT_WEBAPP,
+        Forge::ENDPOINT_MOBILE
     );
 
     /**
@@ -108,14 +109,16 @@ class Connector implements ConnectorInterface
             switch($this->endpoint) {
                 case Forge::ENDPOINT_WEBAPP:
                     $this->connector = new WebApp($this->email, $this->password, $this->answer, $this->platform);
-
-                    // set the captcha handler if needed
-                    if ($this->payload !== null && isset($this->payload['captcha_handler'])) {
-                        $captchaHandler = $this->payload['captcha_handler'];
-                        $this->connector->setCaptchaHandler($captchaHandler);
-                    }
-
                     break;
+                case Forge::ENDPOINT_MOBILE:
+                    $this->connector = new Mobile($this->email, $this->password, $this->answer, $this->platform);
+                    break;
+            }
+
+            // set the captcha handler if needed
+            if ($this->payload !== null && isset($this->payload['captcha_handler'])) {
+                $captchaHandler = $this->payload['captcha_handler'];
+                $this->connector->setCaptchaHandler($captchaHandler);
             }
 
             $this->connector
