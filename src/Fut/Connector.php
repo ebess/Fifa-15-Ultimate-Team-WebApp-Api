@@ -38,6 +38,11 @@ class Connector implements ConnectorInterface
     protected $platform;
 
     /**
+     * @var string
+     */
+    protected $security_code;
+
+    /**
      * @var Client
      */
     protected $client;
@@ -78,15 +83,17 @@ class Connector implements ConnectorInterface
      * @param string $password
      * @param string $answer
      * @param string $platform
+     * @param string $security_code
      * @param string $endpoint
      */
-    public function __construct($client, $email, $password, $answer, $platform, $endpoint, $payload = null)
+    public function __construct($client, $email, $password, $answer, $platform, $security_code, $endpoint, $payload = null)
     {
         $this->client = $client;
         $this->email = $email;
         $this->password = $password;
         $this->answer = $answer;
         $this->platform = $platform;
+        $this->security_code = $security_code;
         $this->endpoint = $endpoint;
         $this->payload = $payload;
 
@@ -108,7 +115,7 @@ class Connector implements ConnectorInterface
 
             switch($this->endpoint) {
                 case Forge::ENDPOINT_WEBAPP:
-                    $this->connector = new WebApp($this->email, $this->password, $this->answer, $this->platform);
+                    $this->connector = new WebApp($this->email, $this->password, $this->answer, $this->platform, $this->security_code);
                     break;
                 case Forge::ENDPOINT_MOBILE:
                     $this->connector = new Mobile($this->email, $this->password, $this->answer, $this->platform);
