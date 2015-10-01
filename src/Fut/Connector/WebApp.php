@@ -100,11 +100,9 @@ class WebApp extends Generic implements EndpointInterface
     private function isLoggedIn()
     {
         $forge = $this->getForge($this->urls['isLoggedIn'], 'get');
-        $data = $forge
+        $json = $forge
             ->removeEndpointHeaders()
-            ->sendRequest();
-
-        $json = $data['response']->json();
+            ->getJson();
 
         return $json['isLoggedIn'] === true ? true : false;
     }
@@ -251,15 +249,15 @@ class WebApp extends Generic implements EndpointInterface
     {
         $url = $this->urls['config'] . '?c1=' . $this->buildCl;
         $forge = $this->getForge($url, 'get');
-        $data = $forge
+        $xml = $forge
             ->removeEndpointHeaders()
-            ->sendRequest();
+            ->getXml();
 
-        $xml = $data['response']->xml();
-
-        $services = $xml->services->prod;
         $path = $this->urls['host'][$this->platform] . $xml->directHttpServiceDestination . 'game/fifa16/';
         $path_auth = $this->urls['site'] . '/iframe/fifa16' . $xml->httpServiceDestination;
+
+        /** @var \SimpleXMLElement $services */
+        $services = $xml->services->prod;
 
         foreach ($services->children() as $key => $value) {
             if ((string)$key == 'authentication') {

@@ -164,5 +164,7 @@ abstract class Generic
                 return $this;
             }
         }
+
+        return $this; // ?
     }
 }
