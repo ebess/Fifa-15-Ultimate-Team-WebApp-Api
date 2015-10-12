@@ -63,9 +63,9 @@ class Mobile extends Generic
      * @param string $answer
      * @param string $platform
      */
-    public function __construct($email, $password, $answer, $platform)
+    public function __construct($email, $password, $answer, $platform, $security_code)
     {
-        parent::__construct($email, $password, $answer, $platform);
+        parent::__construct($email, $password, $answer, $platform, $security_code);
     }
 
     /**

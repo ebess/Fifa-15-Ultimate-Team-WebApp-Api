@@ -140,8 +140,9 @@ class WebApp extends Generic implements EndpointInterface
     /**
      * login request
      *
-     * @param string $url
+     * @param $url
      * @return $this
+     * @throws \Exception
      */
     private function login($url)
     {
@@ -158,7 +159,7 @@ class WebApp extends Generic implements EndpointInterface
             ))
             ->sendRequest();
 
-
+        // Two way authentication needed
         if (preg_match("/Login Verification/", $data['response'], $matches)) {
             $url = $data['response']->getEffectiveUrl();
             //$url = preg_replace('/(e\\d+)s2/', '\1s3', $url);
@@ -172,6 +173,13 @@ class WebApp extends Generic implements EndpointInterface
         return $this;
     }
 
+    /**
+     * sends security code (two-way verification)
+     *
+     * @param $url
+     * @return bool
+     * @throws \Exception
+     */
     private function twoWayVerification($url)
     {
         $forge = $this->getForge($url, 'post');
@@ -186,7 +194,7 @@ class WebApp extends Generic implements EndpointInterface
             ))
             ->sendRequest();
 
-        // Two way authentication needed
+        // Cancel setup of App Authenticator
         if (preg_match("/Set Up an App Authenticator/", $data['response'], $matches)) {
             //$url = $data['response']->getEffectiveUrl();
             $url = preg_replace('/(e\\d+)s2/', '\1s3', $url);
@@ -198,9 +206,16 @@ class WebApp extends Generic implements EndpointInterface
             throw new \Exception('Security code incorrect');
         }
 
-        return;
+        return true;
     }
 
+    /**
+     * handles app authenticator
+     *
+     * @param $url
+     * @return bool
+     * @throws \Exception
+     */
     private function appAuthenticator($url)
     {
         $forge = $this->getForge($url, 'post');
@@ -217,9 +232,15 @@ class WebApp extends Generic implements EndpointInterface
             throw new \Exception('Security code incorrect');
         }
 
-        return;
+        return true;
     }
 
+    /**
+     * starts webapp and fetches EASW_ID and BUILD_CL
+     *
+     * @return $this
+     * @throws \Exception
+     */
     private function launchWebApp()
     {
         $forge = $this->getForge($this->urls['nucleus'], 'get');
@@ -254,7 +275,7 @@ class WebApp extends Generic implements EndpointInterface
             ->getXml();
 
         $path = $this->urls['host'][$this->platform] . $xml->directHttpServiceDestination . 'game/fifa16/';
-        $path_auth = $this->urls['site'] . '/iframe/fifa16' . $xml->httpServiceDestination;
+        $path_auth = $this->urls['site'] . '/iframe/fut16' . $xml->httpServiceDestination;
 
         /** @var \SimpleXMLElement $services */
         $services = $xml->services->prod;
@@ -297,7 +318,6 @@ class WebApp extends Generic implements EndpointInterface
         $json = $forge
             ->setNucId($this->nucId)
             ->setRoute()
-            ->addHeader('origin', 'https://www.easports.com')
             ->getJson();
 
         $this->userAccounts = $json;
@@ -334,9 +354,11 @@ class WebApp extends Generic implements EndpointInterface
 
         $forge = $this->getForge($this->urls['fut']['authentication'], 'post');
         $json = $forge
-//            ->setNucId($this->nucId)
+            ->addHeader('Accept', 'application/json, text/javascript')
+            ->addHeader('Origin', 'https://www.easports.com')
+            ->setNucId($this->nucId)
             ->setRoute()
-            ->setBody($data, true)
+            ->setBody(json_encode($data))
             ->getJson();
 
 
