@@ -49,10 +49,10 @@ class Mobile extends Generic
         'auth'          => 'https://accounts.ea.com/connect/auth?client_id=FOS-SERVER&redirect_uri=nucleus:rest&response_type=code&access_token=%s',
         'sid'           => 'https://pas.mob.v7.easfc.ea.com:8095/pow/auth?timestamp=',
 
-        'utasNucId'     => '/ut/game/fifa15/user/accountinfo?_=',
+        'utasNucId'     => '/ut/game/fifa16/user/accountinfo?_=',
         'utasAuth'      => '/ut/auth?timestamp=',
-        'utasQuestion'  => '/ut/game/fifa15/phishing/validate?answer=%s&timestamp=',
-        'utasWatchlist' => '/ut/game/fifa15/watchlist',
+        'utasQuestion'  => '/ut/game/fifa16/phishing/validate?answer=%s&timestamp=',
+        'utasWatchlist' => '/ut/game/fifa16/watchlist',
     );
 
     /**
@@ -63,9 +63,9 @@ class Mobile extends Generic
      * @param string $answer
      * @param string $platform
      */
-    public function __construct($email, $password, $answer, $platform)
+    public function __construct($email, $password, $answer, $platform, $security_code)
     {
-        parent::__construct($email, $password, $answer, $platform);
+        parent::__construct($email, $password, $answer, $platform, $security_code);
     }
 
     /**
@@ -218,7 +218,7 @@ class Mobile extends Generic
             ->setPid('')
             ->setBody(array(
                 'isReadOnly' 		=> true,
-                'sku' 				=> 'FUT14AND',
+                'sku' 				=> 'FUT16AND',
                 'clientVersion' 	=> 8,
                 'locale'			=> 'de-DE',
                 'method'			=> 'authcode',
@@ -269,7 +269,7 @@ class Mobile extends Generic
             ->setPid('')
             ->setBody(array(
                 'isReadOnly' 		=> false,
-                'sku' 				=> 'FUT15AND',
+                'sku' 				=> 'FUT16AND',
                 'clientVersion' 	=> 11,
                 'locale'			=> 'de-DE',
                 'method'			=> 'authcode',

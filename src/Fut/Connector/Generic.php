@@ -33,6 +33,11 @@ abstract class Generic
     protected $platform;
 
     /**
+     * @var string
+     */
+    protected $security_code;
+
+    /**
      * @var Client
      */
     protected $client;
@@ -55,6 +60,11 @@ abstract class Generic
     /**
      * @var string
      */
+    protected $buildCl;
+
+    /**
+     * @var string
+     */
     protected $phishingToken;
 
     /**
@@ -70,12 +80,13 @@ abstract class Generic
      * @param string $answer
      * @param string $platform
      */
-    public function __construct($email, $password, $answer, $platform)
+    public function __construct($email, $password, $answer, $platform, $security_code)
     {
         $this->email = $email;
         $this->password = $password;
         $this->answer = $answer;
         $this->platform = $platform;
+        $this->security_code = $security_code;
         $this->answerHash = EAHashor::getHash($answer);
     }
 
@@ -153,5 +164,7 @@ abstract class Generic
                 return $this;
             }
         }
+
+        return $this; // ?
     }
 }

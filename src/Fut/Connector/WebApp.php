@@ -26,13 +26,26 @@ class WebApp extends Generic implements EndpointInterface
      * @var string[]
      */
     protected $urls = array(
+        "site"          => "https://www.easports.com",
         "main"          => "https://www.easports.com/fifa/ultimate-team/web-app",
-        "nucleus"       => "https://www.easports.com/iframe/fut15/?baseShowoffUrl=https%3A%2F%2Fwww.easports.com%2Ffifa%2Fultimate-team%2Fweb-app%2Fshow-off&guest_app_uri=http%3A%2F%2Fwww.easports.com%2Ffifa%2Fultimate-team%2Fweb-app&locale=en_US",
-        "shards"        => "https://www.easports.com/iframe/fut15/p/ut/shards?_=",
-        "accounts"      => "https://www.easports.com/iframe/fut15/p/ut/game/fifa15/user/accountinfo?sku=FUT15WEB&_=",
-        "sid"           => "https://www.easports.com/iframe/fut15/p/ut/auth",
-        "validate"      => "https://www.easports.com/iframe/fut15/p/ut/game/fifa15/phishing/validate",
-        "phishing"      => "https://www.easports.com/iframe/fut15/p/ut/game/fifa14/phishing/question?_="
+        "config"        => "https://www.easports.com/iframe/fut16/bundles/futweb/web/flash/xml/site_config.xml",
+        "isLoggedIn"    => "https://www.easports.com/fifa/api/isUserLoggedIn",
+        "keepAlive"     => "https://www.easports.com/fifa/api/keepalive",
+        "host"          => array(
+            'pc'        => 'https://utas.s2.fut.ea.com:443',
+            'ps3'       => 'https://utas.s2.fut.ea.com:443',
+            'ps4'       => 'https://utas.s2.fut.ea.com:443',
+            'xbox'      => 'https://utas.s3.fut.ea.com:443',
+            'xbox360'   => 'https://utas.s3.fut.ea.com:443',
+            'ios'       => 'https://utas.fut.ea.com:443',
+            'and'       => 'https://utas.fut.ea.com:443'
+        ),
+        "nucleus"       => "https://www.easports.com/iframe/fut16/?baseShowoffUrl=https%3A%2F%2Fwww.easports.com%2Ffifa%2Fultimate-team%2Fweb-app%2Fshow-off&guest_app_uri=http%3A%2F%2Fwww.easports.com%2Ffifa%2Fultimate-team%2Fweb-app&locale=en_US",
+        "shards"        => "https://www.easports.com/iframe/fut16/p/ut/shards?_=",
+        "accounts"      => "https://www.easports.com/iframe/fut16/p/ut/game/fifa16/user/accountinfo?sku=FUT16WEB&_=",
+        "sid"           => "https://www.easports.com/iframe/fut16/p/ut/auth",
+        "validate"      => "https://www.easports.com/iframe/fut16/p/ut/game/fifa16/phishing/validate",
+        "phishing"      => "https://www.easports.com/iframe/fut16/p/ut/game/fifa16/phishing/question?_="
     );
 
     /**
@@ -40,10 +53,11 @@ class WebApp extends Generic implements EndpointInterface
      * @param string $password
      * @param string $answer
      * @param string $platform
+     * @param string $security_code
      */
-    public function __construct($email, $password, $answer, $platform)
+    public function __construct($email, $password, $answer, $platform, $security_code)
     {
-        parent::__construct($email, $password, $answer, $platform);
+        parent::__construct($email, $password, $answer, $platform, $security_code);
     }
 
     /**
@@ -54,8 +68,8 @@ class WebApp extends Generic implements EndpointInterface
         $url = $this->getMainPage();
         $this
             ->login($url)
-            ->getNucleusId()
-            ->getShards()
+            ->launchWebApp()
+            ->getUrls()
             ->getUserAccounts()
             ->getSessionId()
             ->getPhishing()
@@ -79,6 +93,36 @@ class WebApp extends Generic implements EndpointInterface
     }
 
     /**
+     * checks if user is logged in
+     *
+     * @return bool
+     */
+    private function isLoggedIn()
+    {
+        $forge = $this->getForge($this->urls['isLoggedIn'], 'get');
+        $json = $forge
+            ->removeEndpointHeaders()
+            ->getJson();
+
+        return $json['isLoggedIn'] === true ? true : false;
+    }
+
+    /**
+     * keep session alive
+     *
+     * @return bool
+     */
+    private function keepAlive()
+    {
+        $forge = $this->getForge($this->urls['keepAlive'], 'get');
+        $json = $forge
+            ->removeEndpointHeaders()
+            ->getJson();
+
+        return $json['isLoggedIn'] === true ? true : false;
+    }
+
+    /**
      * gets the url to send login request to
      *
      * @return string
@@ -96,13 +140,14 @@ class WebApp extends Generic implements EndpointInterface
     /**
      * login request
      *
-     * @param string $url
+     * @param $url
      * @return $this
+     * @throws \Exception
      */
     private function login($url)
     {
         $forge = $this->getForge($url, 'post');
-        $forge
+        $data = $forge
             ->addHeader('Content-Type', 'application/x-www-form-urlencoded')
             ->removeEndpointHeaders()
             ->setBody(array(
@@ -110,50 +155,157 @@ class WebApp extends Generic implements EndpointInterface
                 "password" => $this->password,
                 "_rememberMe" => "on",
                 "rememberMe" => "on",
-                "_eventId" => "submit",
-                "facebookAuth" => ""
+                "_eventId" => "submit"
             ))
             ->sendRequest();
+
+        // Two way authentication needed
+        if (preg_match("/Login Verification/", $data['response'], $matches)) {
+            $url = $data['response']->getEffectiveUrl();
+            //$url = preg_replace('/(e\\d+)s2/', '\1s3', $url);
+            $this->twoWayVerification($url);
+        }
+
+        if (!$this->isLoggedIn()) {
+            throw new \Exception('Login failed.');
+        }
 
         return $this;
     }
 
     /**
-     * get nucleus id request
+     * sends security code (two-way verification)
+     *
+     * @param $url
+     * @return bool
+     * @throws \Exception
+     */
+    private function twoWayVerification($url)
+    {
+        $forge = $this->getForge($url, 'post');
+        $data = $forge
+            ->addHeader('Content-Type', 'application/x-www-form-urlencoded')
+            ->removeEndpointHeaders()
+            ->setBody(array(
+                "twofactorCode" => $this->security_code,
+                "_trustThisDevice" => "on",
+                "trustThisDevice" => "on",
+                "_eventId" => "submit"
+            ))
+            ->sendRequest();
+
+        // Cancel setup of App Authenticator
+        if (preg_match("/Set Up an App Authenticator/", $data['response'], $matches)) {
+            //$url = $data['response']->getEffectiveUrl();
+            $url = preg_replace('/(e\\d+)s2/', '\1s3', $url);
+            $this->appAuthenticator($url);
+        }
+
+        // Security code incorrect
+        if (preg_match("/Login Verification/", $data['response'], $matches)) {
+            throw new \Exception('Security code incorrect');
+        }
+
+        return true;
+    }
+
+    /**
+     * handles app authenticator
+     *
+     * @param $url
+     * @return bool
+     * @throws \Exception
+     */
+    private function appAuthenticator($url)
+    {
+        $forge = $this->getForge($url, 'post');
+        $data = $forge
+            ->addHeader('Content-Type', 'application/x-www-form-urlencoded')
+            ->removeEndpointHeaders()
+            ->setBody(array(
+                "_eventId" => "cancel",
+                "appDevice" => "IPHONE"
+            ))
+            ->sendRequest();
+
+        if(!preg_match('/<title>FIFA Football/', $data['response'], $matches)) {
+            throw new \Exception('Security code incorrect');
+        }
+
+        return true;
+    }
+
+    /**
+     * starts webapp and fetches EASW_ID and BUILD_CL
      *
      * @return $this
+     * @throws \Exception
      */
-    private function getNucleusId()
+    private function launchWebApp()
     {
         $forge = $this->getForge($this->urls['nucleus'], 'get');
         $body = $forge
             ->removeEndpointHeaders()
             ->getBody();
 
-        if (!preg_match("/var\ EASW_ID = '(\d*)';/", $body, $matches)) {
-            throw new \Exception('Login failed.');
+        if (!preg_match("/var EASW_ID = '(\\d+)';/", $body, $matches)) {
+            throw new \Exception('Launching WebApp failed.');
         }
-
         $this->nucId = $matches[1];
+
+        if (!preg_match("/var BUILD_CL = '(\\d+)';/", $body, $matches)) {
+            throw new \Exception('Launching WebApp failed.');
+        }
+        $this->buildCl = $matches[1];
 
         return $this;
     }
 
     /**
-     * get shards request
+     * get webapp urls
      *
      * @return $this
      */
-    private function getShards()
+    private function getUrls()
     {
-        $forge = $this->getForge($this->urls['shards'], 'get');
-        $forge
-            ->setNucId($this->nucId)
-            ->setRoute()
-            ->sendRequest();
+        $url = $this->urls['config'] . '?c1=' . $this->buildCl;
+        $forge = $this->getForge($url, 'get');
+        $xml = $forge
+            ->removeEndpointHeaders()
+            ->getXml();
+
+        $path = $this->urls['host'][$this->platform] . $xml->directHttpServiceDestination . 'game/fifa16/';
+        $path_auth = $this->urls['site'] . '/iframe/fut16' . $xml->httpServiceDestination;
+
+        /** @var \SimpleXMLElement $services */
+        $services = $xml->services->prod;
+
+        foreach ($services->children() as $key => $value) {
+            if ((string)$key == 'authentication') {
+                $this->urls['fut'][(string)$key] = $path_auth . (string)$value;
+            } else {
+                $this->urls['fut'][(string)$key] = $path . (string)$value;
+            }
+        }
 
         return $this;
     }
+
+//    /**
+//     * get shards request
+//     *
+//     * @return $this
+//     */
+//    private function getShards()
+//    {
+//        $forge = $this->getForge($this->urls['shards'], 'get');
+//        $forge
+//            ->setNucId($this->nucId)
+//            ->setRoute()
+//            ->sendRequest();
+//
+//        return $this;
+//    }
 
     /**
      * gets user account data
@@ -185,11 +337,12 @@ class WebApp extends Generic implements EndpointInterface
         $platform = $this->getNucleusPlatform($this->platform);
         $data = array(
             'isReadOnly' => false,
-            'sku' => 'FUT15WEB',
+            'sku' => 'FUT16WEB',
             'clientVersion' => 1,
-            'nuc' => $this->nucId,
+//            'nuc' => $this->nucId,
             'nucleusPersonaId' => $personaId,
             'nucleusPersonaDisplayName' => $personaName,
+            'gameSku' => 'FFA16XBO',
             'nucleusPersonaPlatform' => $platform,
             'locale' => 'en-GB',
             'method' => 'authcode',
@@ -199,11 +352,13 @@ class WebApp extends Generic implements EndpointInterface
             )
         );
 
-        $forge = $this->getForge($this->urls['sid'], 'post');
+        $forge = $this->getForge($this->urls['fut']['authentication'], 'post');
         $json = $forge
+            ->addHeader('Accept', 'application/json, text/javascript')
+            ->addHeader('Origin', 'https://www.easports.com')
             ->setNucId($this->nucId)
             ->setRoute()
-            ->setBody($data, true)
+            ->setBody(json_encode($data))
             ->getJson();
 
 
