@@ -31,7 +31,7 @@ Example: (also see example.php)
     try {
 
         /**
-         * there are two platforms at the the moment
+         * there are two platforms at the moment
          *
          * playstation: Forge::PLATFORM_PLAYSTATION
          * xbox: Forge::PLATFORM_XBOX
